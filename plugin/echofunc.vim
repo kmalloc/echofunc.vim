@@ -316,19 +316,51 @@ function! s:GetFuncName(text)
 endfunction
 
 function! EchoFunc()
+
+    if g:EchoFunc_AutoTrigger == 1
+        let l:ret = PrepareResults()
+        if l:ret == ''
+            return ''
+        endif
+        call s:EchoFuncDisplay()
+        return ''
+    else
+        return ''
+    endif
+
+endfunction
+
+
+function! PrepareResults()
+
     let name=s:GetFuncName(getline('.')[:(col('.')-3)])
     if name==''
         return ''
     endif
+
     call s:GetFunctions(name, 1)
-    call s:EchoFuncDisplay()
-    return ''
+    return "suc"
+
 endfunction
 
 function! EchoFuncN()
+
     if s:res==[]
-        return ''
+
+        if g:EchoFunc_AutoTrigger == 0
+
+            call PrepareResults()
+
+            if s:res==[]
+                silent! execute "stopinsert"
+                return ''
+            endif
+        else
+            return ''
+        endif
+
     endif
+
     if s:count==len(s:res)
         let s:count=1
     else
@@ -339,9 +371,23 @@ function! EchoFuncN()
 endfunction
 
 function! EchoFuncP()
+
     if s:res==[]
-        return ''
+
+        if g:EchoFunc_AutoTrigger == 0
+
+            call PrepareResults()
+
+            if s:res==[]
+                silent! execute "stopinsert"
+                return ''
+            endif
+        else
+            return ''
+        endif
+
     endif
+
     if s:count==1
         let s:count=len(s:res)
     else
@@ -358,10 +404,13 @@ function! EchoFuncStart()
     let b:EchoFuncStarted=1
     let s:ShowMode=&showmode
     let s:CmdHeight=&cmdheight
+
     inoremap <silent> <buffer>  (   (<c-r>=EchoFunc()<cr>
     inoremap <silent> <buffer>  )    <c-r>=EchoFuncClear()<cr>)
+
     exec 'inoremap <silent> <buffer> ' . g:EchoFuncKeyNext . ' <c-r>=EchoFuncN()<cr>'
     exec 'inoremap <silent> <buffer> ' . g:EchoFuncKeyPrev . ' <c-r>=EchoFuncP()<cr>'
+    exec 'inoremap <silent> <buffer> ' . g:EchoFuncKeyClear . ' <c-r>=EchoFuncClear()<cr>'
 endfunction
 
 function! EchoFuncClear()
@@ -378,6 +427,7 @@ function! EchoFuncStop()
     iunmap      <buffer>    )
     exec 'iunmap <buffer> ' . g:EchoFuncKeyNext
     exec 'iunmap <buffer> ' . g:EchoFuncKeyPrev
+    exec 'iunmap <buffer> ' . g:EchoFuncKeyClear
     unlet b:EchoFuncStarted
 endfunction
 
@@ -496,6 +546,10 @@ if !exists("g:EchoFuncKeyPrev")
     else
         let g:EchoFuncKeyPrev='<M-->'
     endif
+endif
+
+if !exists("g:EchoFuncKeyClear")
+    let g:EchoFuncKeyClear = '<M-c>'
 endif
 
 if !exists("g:EchoFuncShowOnStatus")
